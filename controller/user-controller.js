@@ -3,9 +3,12 @@ import {
     ormGetUser as _getUser, 
     ormChangeEmail as _changeEmail, 
     ormDeleteUser as _deleteUser,
-    ormGetAllUser as _getAllUser, 
+    ormGetAllUser as _getAllUser,
+    ormLogin as _login,
+    ormCreateAdmin as _createAdmin
 } from "../model/user-orm.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 export async function getAllUser(req, res) {
     const allUsers = await _getAllUser();
@@ -14,12 +17,21 @@ export async function getAllUser(req, res) {
                 .json(allUsers);
 }
 
-export async function addUser(req, res) {
+export async function addUser(req, res, isAdmin) {
     try {
         const { username, email, password } = req.body;
+        let saltRounds = parseInt(process.env.SALT_ROUNDS);
 
         if (username && email && password) {
-            const resp = await _createUser(username, email, password);
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
+            let resp;
+
+            if (isAdmin) {
+                resp = await _createAdmin(username, email, hashedPassword);
+            } else {
+                resp = await _createUser(username, email, hashedPassword);
+            }
+
             if (resp.err) {
                 if (
                     resp.err.name &&
@@ -136,15 +148,13 @@ export async function login(req, res) {
     try {
         const { username, password } = req.body;
         if (username && password) {
-            const user = await _getUser(username, password);
+            const user = await _login(username, password);
             if (user.err) {
                 return res.status(400).json({ message: "Could not sign in!" });
             } else {
                 console.log(`Signed in user ${username} successfully!`);
         
                 let token = await generateToken(user);
-        
-                const updated = await _addToken(username, token);
         
                 return res.status(201).json({
                     username: username,
@@ -167,8 +177,8 @@ export async function generateToken(user) {
     let token = await jwt.sign(
         {
             username: user.username,
-            hashedPassword: user.hashedPassword,
             _id: user._id,
+            role : user.role
         },
       privateKey,
       { expiresIn: "1h" }

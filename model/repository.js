@@ -23,14 +23,33 @@ export async function createUser(params) {
   return await UserModel.create({
     username: params.username,
     email: params.email,
-    password: params.password
+    password: params.password,
+    role:"user"
+  });
+}
+
+export async function createAdmin(params) {
+  return await UserModel.create({
+    username: params.username,
+    email: params.email,
+    password: params.password,
+    role:"admin"
   });
 }
 
 // READ FUNCTION
 export async function getUser(params) {
-    const user = await UserModel.findOne({ username: params.username }, "username email");
+    const user = await UserModel.findOne({ username: params.username }, "username email role");
     return user;
+}
+
+export async function loginUser(username, password) {
+  
+  const user = await UserModel.findOne({ username: username });
+
+  if (user && user.comparePassword(password)) {
+    return user;
+  }
 }
 
 export async function changeEmail(params) {

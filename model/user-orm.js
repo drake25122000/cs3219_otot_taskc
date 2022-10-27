@@ -3,8 +3,20 @@ import {
     createUser,
     getUser,
     deleteUser,
-    changeEmail
+    changeEmail,
+    loginUser,
+    createAdmin
 } from "./repository.js";
+
+export async function ormCreateAdmin(username, email, password) {
+    try {
+        const newUser = await createAdmin({ username, email, password });
+        await newUser.save();
+        return true;
+    } catch (err) {
+        return { err };
+    }
+}
 
 export async function ormGetAllUser() {
     
@@ -32,6 +44,16 @@ export async function ormGetUser(username) {
     }
     return user;
     
+}
+
+export async function ormLogin(username, password) {
+    const user = await loginUser(username, password);
+
+    if (user == null) {
+        const err = "No user with " + username + " as the username."
+        return { err };
+    }
+    return user;
 }
 
 // UPDATE FUNCTION
