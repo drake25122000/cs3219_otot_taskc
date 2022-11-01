@@ -10,11 +10,10 @@ import {
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-export async function getAllUser(req, res) {
-    const allUsers = await _getAllUser();
+export async function getAllUser(req, res, isAdmin) {
+    const allUsers = await _getAllUser(isAdmin);
 
-    return res.status(201)
-                .json(allUsers);
+    return res.status(201).json(allUsers);
 }
 
 export async function addUser(req, res, isAdmin) {
@@ -154,7 +153,7 @@ export async function login(req, res) {
             } else {
                 console.log(`Signed in user ${username} successfully!`);
         
-                let token = await generateToken(user);
+                let token = generateToken(user);
         
                 return res.status(201).json({
                     username: username,
@@ -171,10 +170,10 @@ export async function login(req, res) {
     }
 }
 
-export async function generateToken(user) {
+export function generateToken(user) {
     let privateKey = process.env.JWT_PRIVATE_KEY;
   
-    let token = await jwt.sign(
+    let token = jwt.sign(
         {
             username: user.username,
             _id: user._id,

@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { roles } from "../roles.js";
 
 export async function verifyUserToken(req, res, next) {
     if (!(req.body &&
@@ -8,58 +9,42 @@ export async function verifyUserToken(req, res, next) {
         return res.status(401).json({ message: "Missing JWT token!" });
     }
 
-    let privateKey = process.env.JWT_PRIVATE_KEY;
-    const username = req.body.username;
+    const privateKey = process.env.JWT_PRIVATE_KEY;
+    const usernameBody = req.body.username;
+    const usernameParam = req.params.username;
+
     const tokenFromUser = req.headers.authorization.split(" ")[1];
-    
     try {
         const payload = jwt.verify(tokenFromUser, privateKey, function (err, decoded) {
             if (err) {
-              throw err;
+                throw err;
             }
             return decoded;
         });
 
-        if (username != payload.username) {
+        if (usernameParam != payload.username && usernameBody != payload.username) {
             return res.status(401).json({ message : "Unauthorized user!"});
         }
 
+        req.role = payload.role;
         next();
     } catch (err) {
         return res.status(401).json({ message: "Invalid JWT token!" });
     }
 }
 
-export async function verifyAdminToken(req, res, next) {
-    if (!(req.body &&
-        req.headers &&
-        req.headers.authorization &&
-        req.headers.authorization.split(" ")[0] === "Bearer")) {
-        return res.status(401).json({ message: "Missing JWT token!" });
-    }
-
-    let privateKey = process.env.JWT_PRIVATE_KEY;
-    const username = req.body.username;
-    const tokenFromUser = req.headers.authorization.split(" ")[1];
-    
-    try {
-        const payload = jwt.verify(tokenFromUser, privateKey, function (err, decoded) {
-            if (err) {
-              throw err;
+export function grantAccess(action, resource) {
+    return async (req, res, next) => {
+        try {
+            const permission = roles.can(req.role)[action](resource);
+            if (!permission.granted) {
+                return res.status(401).json({
+                    error: "You don't have enough permission to perform this action"
+                });
             }
-            return decoded;
-        });
-
-        if (username != payload.username) {
-            return res.status(401).json({ message : "Unauthorized user!"});
+            next();
+        } catch (error) {
+            next(error);
         }
-
-        if (payload.role != "admin") {
-            return res.status(401).json({ message : "Unauthorized access!"});
-        }
-
-        next();
-    } catch (err) {
-        return res.status(401).json({ message: "Invalid JWT token!" });
     }
 }

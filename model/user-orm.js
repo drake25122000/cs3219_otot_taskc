@@ -18,9 +18,9 @@ export async function ormCreateAdmin(username, email, password) {
     }
 }
 
-export async function ormGetAllUser() {
+export async function ormGetAllUser(isAdmin) {
     
-    const allUsers = getAllUser();
+    const allUsers = await getAllUser(isAdmin);
 
     return allUsers;
 }  

@@ -14,8 +14,14 @@ let db = mongoose.connection;
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 db.once("open", () => console.log("Successfully connected to MongoDB"));
 
-export async function getAllUser() {
-  return await UserModel.find({}, "username email");
+export async function getAllUser(isAdmin) {
+  let select = "username";
+
+  if (isAdmin) {
+    select = "username email";
+  }
+
+  return await UserModel.find({}, select);
 }
 
 // CREATE FUNCTION
