@@ -26,6 +26,7 @@ export async function verifyUserToken(req, res, next) {
             return res.status(401).json({ message : "Unauthorized user!"});
         }
 
+        req.username = payload.username
         req.role = payload.role;
         next();
     } catch (err) {
